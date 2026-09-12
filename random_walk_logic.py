@@ -2,10 +2,6 @@
 # Generates synthetic IMU chain data and quaternion measurements.
 # No Streamlit dependency.
 
-from __future__ import annotations
-
-from dataclasses import dataclass
-
 import numpy as np
 import csv
 
@@ -21,25 +17,26 @@ AXIS_INDEX = {"x": 0, "y": 1, "z": 2}
 MAX_BEND_SAFETY_RAD = np.pi * 0.92
 
 
-@dataclass
 class ChainSample:
     # Generated chain data for one sample.
-    positions: np.ndarray
-    directions: np.ndarray
-    quats: np.ndarray
+
+    def __init__(self, positions, directions, quats):
+        self.positions = positions
+        self.directions = directions
+        self.quats = quats
 
     @property
-    def num_sensors(self) -> int:
+    def num_sensors(self):
         return self.positions.shape[0]
 
 
-def random_unit_vector(rng: np.random.Generator) -> np.ndarray:
+def random_unit_vector(rng):
     # Generate a random unit vector.
     vector = rng.standard_normal(3)
     return vector / np.linalg.norm(vector)
 
 
-def free_axes_from_fixed(fixed_axes: tuple[str, ...]) -> list[int]:
+def free_axes_from_fixed(fixed_axes):
     # Convert fixed axis names to their indices.
     # Keep this flexible so x, y, or z can be fixed.
     try:
@@ -62,9 +59,9 @@ def free_axes_from_fixed(fixed_axes: tuple[str, ...]) -> list[int]:
 
 #this it to use in S1 position when we need random values
 def random_direction_in_subspace(
-    rng: np.random.Generator,
-    free_axes: list[int],
-) -> np.ndarray:
+    rng,
+    free_axes,
+):
     # Generate a random direction using the available axes.
     direction = np.zeros(3)
 
@@ -82,7 +79,7 @@ def random_direction_in_subspace(
     return random_unit_vector(rng)
 
 
-def perp_basis(d: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def perp_basis(d):
     # Find two unit vectors perpendicular to the current direction.
 
     #trying to choose the arbitary vector normally choose X
@@ -105,10 +102,10 @@ def perp_basis(d: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 # takes the current chain direction and bends it by a random amount in a random direction.
 def bend_direction(
-    rng: np.random.Generator,
-    direction: np.ndarray,
-    bend_std_deg: float,
-) -> np.ndarray:
+    rng,
+    direction,
+    bend_std_deg,
+):
     # Apply one random bend to the current direction.
     # generates a random number from a normal distribution.
     #taking abs to make angle positive and then converting it to radians
@@ -130,11 +127,11 @@ def bend_direction(
 #this fuction is to bend the direction in the subspace defined by the free axes
 #while keeping the fixed axes at zero. (we need this when 2D contrains needed)
 def bend_direction_in_subspace(
-    rng: np.random.Generator,
-    direction: np.ndarray,
-    bend_std_deg: float,
-    free_axes: list[int],
-) -> np.ndarray:
+    rng,
+    direction,
+    bend_std_deg,
+    free_axes,
+):
     
     # If there is only one free axis 
     # we cannot bend the direction.
@@ -171,7 +168,7 @@ def bend_direction_in_subspace(
 # This is to find the quaternion that rotates the reference axis(a) to the new direction vector(b).
 #Since we have a fixed reference axis this functions gives us 
 #What rotation takes the original +X direction(a) to the new seonsor's direction(b) 
-def vec_to_quat(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+def vec_to_quat(a, b):
 
     # Calculate the shortest-arc quaternion from a to b.
     #We can use the dot product to find the angle between the two vectors.
@@ -209,11 +206,12 @@ def vec_to_quat(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return quat / np.linalg.norm(quat)
 
 
-@dataclass
 class NoiseSpec:
     # Configuration for one quaternion noise source.
-    kind: str
-    value: float
+
+    def __init__(self, kind, value):
+        self.kind = kind
+        self.value = value
 
 
 #This is for use in the UI to set the default values for the noise parameters and their ranges.
@@ -250,7 +248,7 @@ NOISE_KIND_DEFAULTS = {
 
 # This function rotates the reference axis by the quaternion value
 # this will show us which way the sensor's X-axis is pointing right now
-def rotate_ref_by_quat(q: np.ndarray) -> np.ndarray:
+def rotate_ref_by_quat(q):
     # Rotate the reference axis using the quaternion.
     w, x, y, z = q
     qv = np.array([x, y, z])
@@ -262,10 +260,10 @@ def rotate_ref_by_quat(q: np.ndarray) -> np.ndarray:
 
 #Here we are applying all the noise specificed in the specs list to the quaternions in order way ()
 def apply_quaternion_noise(
-    quats: np.ndarray,
-    specs: list[NoiseSpec],
-    rng: np.random.Generator,
-) -> np.ndarray:
+    quats,
+    specs,
+    rng,
+):
     noisy_quats = quats.copy()
 
     for spec in specs:
@@ -311,13 +309,13 @@ def apply_quaternion_noise(
 #Generating random walk chain
 
 def generate_chain(
-    num_sensors: int = NUM_SENSORS,
-    link_length_cm: float = LINK_LENGTH_CM,
-    bend_std_deg: float = BEND_STD_DEG,
-    randomize_start_orientation: bool = True,
-    fixed_axes: tuple[str, ...] = (),
-    seed: int | None = None,
-) -> ChainSample:
+    num_sensors=NUM_SENSORS,
+    link_length_cm=LINK_LENGTH_CM,
+    bend_std_deg=BEND_STD_DEG,
+    randomize_start_orientation=True,
+    fixed_axes=(),
+    seed=None,
+):
     rng = np.random.default_rng(seed)
     free_axes = free_axes_from_fixed(fixed_axes)
 
@@ -371,14 +369,14 @@ def generate_chain(
 
 
 def generate_dataset(
-    num_samples: int = NUM_SAMPLES,
-    num_sensors: int = NUM_SENSORS,
-    link_length_cm: float = LINK_LENGTH_CM,
-    bend_std_deg: float = BEND_STD_DEG,
-    randomize_start_orientation: bool = True,
-    fixed_axes: tuple[str, ...] = (),
-    seed: int | None = None,
-) -> list[ChainSample]:
+    num_samples=NUM_SAMPLES,
+    num_sensors=NUM_SENSORS,
+    link_length_cm=LINK_LENGTH_CM,
+    bend_std_deg=BEND_STD_DEG,
+    randomize_start_orientation=True,
+    fixed_axes=(),
+    seed=None,
+):
 
     master_rng = np.random.default_rng(seed)
     
@@ -403,7 +401,7 @@ def generate_dataset(
 
 #Below functions are for the Data conversions to the format we want 
 
-def positions_to_wide_row(positions: np.ndarray) -> dict:
+def positions_to_wide_row(positions):
     # Convert sensor positions into one wide row.
     row = {}
 
@@ -415,7 +413,7 @@ def positions_to_wide_row(positions: np.ndarray) -> dict:
     return row
 
 
-def quats_to_wide_row(quats: np.ndarray) -> dict:
+def quats_to_wide_row(quats):
     # Convert sensor quaternions into one wide row.
     row = {}
 
@@ -429,9 +427,9 @@ def quats_to_wide_row(quats: np.ndarray) -> dict:
 
 
 def positions_to_cell_row(
-    positions: np.ndarray,
-    decimals: int = 6,
-) -> dict:
+    positions,
+    decimals=6,
+):
     # Convert sensor positions to one cell-style row.
     row = {}
 
@@ -448,9 +446,9 @@ def positions_to_cell_row(
 
 
 def quats_to_cell_row(
-    quats: np.ndarray,
-    decimals: int = 6,
-) -> dict:
+    quats,
+    decimals=6,
+):
     # Convert sensor quaternions to one cell-style row.
     row = {}
 

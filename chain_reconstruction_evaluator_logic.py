@@ -1,10 +1,7 @@
 #Evaluator Logic for shape reconstruction from quaternions to positions.
 
-from __future__ import annotations
-
 import ast
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -17,9 +14,9 @@ LINK_LENGTH_CM = 5.0  # Keep consistent with the data generator.
 # Rotate a vector by a quaternion similar to rando_walk_logic.py
 # In here we just using with reference axis to get the direction of the next link in the chain.
 def rotate_vector_by_quat(
-    q: np.ndarray,
-    v: np.ndarray = REFERENCE_AXIS,
-) -> np.ndarray:
+    q,
+    v=REFERENCE_AXIS,
+):
     w, x, y, z = q
 
     #seperating the vectore part of the quaternion
@@ -34,9 +31,9 @@ def rotate_vector_by_quat(
 #Current direct shape reconstruction logic 
 #based on the assumption that the chain sensors are in equal length.
 def quats_to_positions(
-    quats: np.ndarray,
-    link_length_cm: float = LINK_LENGTH_CM,
-) -> np.ndarray:
+    quats,
+    link_length_cm=LINK_LENGTH_CM,
+):
 
     #this is for flexibility to support differnt number of sensors in the chain
     num_sensors = quats.shape[0]
@@ -64,12 +61,12 @@ def quats_to_positions(
     return positions
 
 
-def parse_cell(cell: str) -> np.ndarray:
+def parse_cell(cell):
     # Convert a "[w, x, y, z]" into an array.
     return np.array(ast.literal_eval(cell))
 
 
-def sensor_columns(columns) -> list[str]:
+def sensor_columns(columns):
     # Get sensor columns in sensor number order.
     cols = [c for c in columns if c.startswith("sensor_")]
 
@@ -79,7 +76,7 @@ def sensor_columns(columns) -> list[str]:
     )
 
 
-def cell_row_to_array(row: pd.Series) -> np.ndarray:
+def cell_row_to_array(row):
     # Convert one CSV row into a sensor component array.
     sensor_cols = sensor_columns(row.index)
 
@@ -90,8 +87,8 @@ def cell_row_to_array(row: pd.Series) -> np.ndarray:
 
 
 def quaternion_cell_df_to_array(
-    df: pd.DataFrame,
-) -> np.ndarray:
+    df,
+):
     # Convert the full DataFrame to
     # (num_samples, num_sensors, 4).
     sensor_cols = sensor_columns(df.columns)
@@ -112,9 +109,9 @@ def quaternion_cell_df_to_array(
 
 
 def positions_to_cell_row(
-    positions: np.ndarray,
-    decimals: int = 6,
-) -> dict:
+    positions,
+    decimals=6,
+):
     # Store each sensor position as one cell.
     row = {}
 
@@ -131,9 +128,9 @@ def positions_to_cell_row(
 
 
 def reconstruct_positions_from_file(
-    quaternion_csv_path: str | Path,
-    link_length_cm: float = LINK_LENGTH_CM,
-) -> pd.DataFrame:
+    quaternion_csv_path,
+    link_length_cm=LINK_LENGTH_CM,
+):
     #read the quaternions file
     df = pd.read_csv(quaternion_csv_path)
 
@@ -170,9 +167,9 @@ def reconstruct_positions_from_file(
 
 
 def chain_error_cm(
-    ground_truth_positions: np.ndarray,
-    other_positions: np.ndarray,
-) -> np.ndarray:
+    ground_truth_positions,
+    other_positions,
+):
     # Calculate the position error for each sensor.
     #uclidean distance between the ground truth and other positions for each sensor.
     return np.linalg.norm(
