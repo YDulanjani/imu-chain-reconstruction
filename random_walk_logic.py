@@ -120,6 +120,7 @@ def bend_direction(
 
     #Using the Rodrigues' rotation formula to rotate the direction vector around the perpendicular axis by the bend angle
     #v' = v * cos(theta) + (k x v) * sin(theta) + k * (k . v) * (1 - cos(theta))
+    #And in article chapter 03
     new_direction = (
         np.cos(bend_rad) * direction
         + np.sin(bend_rad) * perp
@@ -145,6 +146,7 @@ def bend_direction_in_subspace(
     # we can rotate the direction vector within the plane defined by those axes.
     if len(free_axes) == 2:
         # Rotate within the constrained plane.
+        #In article chpater 3 - build Euler-angle rotations
         i, j = free_axes
 
         # Generate a random bend angle within the allowed range
@@ -175,6 +177,7 @@ def vec_to_quat(a, b):
 
     # Calculate the shortest-arc quaternion from a to b.
     #We can use the dot product to find the angle between the two vectors.
+    #Similar thing done in the article chapter 3 but with finding cos and sin values.this method is easy same result
     dot = float(np.clip(np.dot(a, b), -1.0, 1.0))
 
     #1=exactly same direction,0=  90 deg apart, -1 = opposite directions
@@ -183,6 +186,7 @@ def vec_to_quat(a, b):
     # we need to find a perpendicular axis to rotate around
     # becoz if we just take the cross product of two opposite vectors we get a zero vector which is not valid for rotation 
     # (cross product becomes problematic if the two vectors are parallel or nearly parallel)
+    #These are edge case in the artcile chpater 3 eqn 3.30 when alpha is pi then sin -> 1 and cos -> 0  
     if dot < -0.999999:
  
         # find some axis that is perpendicular to a
