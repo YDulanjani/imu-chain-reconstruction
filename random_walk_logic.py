@@ -2,6 +2,9 @@
 # Generates synthetic IMU chain data and quaternion measurements.
 # No Streamlit dependency.
 
+#Reference: https://arxiv.org/abs/1704.06053 
+#Using Inertial Sensors for Position and Orientation Estimation
+
 import numpy as np
 import csv
 
